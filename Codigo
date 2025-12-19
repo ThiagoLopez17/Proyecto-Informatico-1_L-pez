@@ -1,0 +1,108 @@
+#define DEBUG
+
+#define R 3
+#define B 9
+#define G 6
+#define BOTON 4
+#define BUZZER 7
+
+#define LDR_PIN  A1
+#define TEMP_PIN A0
+
+int botonAnt = 0;
+int estadoAlarma = 0;
+int modo = 1;
+
+
+void setup() {
+  pinMode(BOTON, INPUT_PULLUP);
+  pinMode(BUZZER, OUTPUT);
+  pinMode(R, OUTPUT);
+  pinMode(G, OUTPUT);
+  pinMode(B, OUTPUT);
+
+#ifdef DEBUG
+  Serial.begin(9600);
+#endif
+}
+
+void loop() {
+
+  int botonAct = !digitalRead(BOTON);
+
+  if (botonAct && !botonAnt) {
+    modo = modo + 1;
+    if (modo > 3) modo = 1;
+    delay(200);
+  }
+  botonAnt = botonAct;
+
+  int lecturaTemp = analogRead(TEMP_PIN);
+  float temperatura = lecturaTemp * 5.0 / 1024 * 100 - 50;
+
+  int lecturaLuz = analogRead(LDR_PIN);
+  int luz = map(lecturaLuz, 1, 310, 0, 100 );
+  //
+
+#ifdef DEBUG
+  Serial.print("Temp: ");
+  Serial.print(temperatura);
+  Serial.print(" | Luz: ");
+  Serial.println(luz);
+#endif
+
+  if (modo == 1) {
+
+    if (temperatura <= 0 || temperatura >= 100) {
+      estadoAlarma = !estadoAlarma;
+      digitalWrite(R, estadoAlarma);
+      digitalWrite(G, LOW);
+      digitalWrite(B, LOW);
+      digitalWrite(BUZZER, estadoAlarma);
+      delay(200);
+    }
+    else if (temperatura >= 60 && temperatura <= 80) {
+      digitalWrite(R, LOW);
+      digitalWrite(G, HIGH);
+      digitalWrite(B, LOW);
+      digitalWrite(BUZZER, LOW);
+    }
+    else {
+      digitalWrite(R, HIGH);
+      digitalWrite(G, HIGH);
+      digitalWrite(B, LOW);
+      digitalWrite(BUZZER, LOW);
+    }
+  }
+
+  else if (modo == 2) {
+
+    digitalWrite(R, HIGH);
+
+    int azul = map(luz, 0, 100, 0, 255);
+    int verde = map(luz, 100, 0, 0, 255);
+
+    analogWrite(B, azul);
+    analogWrite(G, verde);
+
+    digitalWrite(BUZZER, LOW);
+    delay(100);
+  }
+  else {
+
+    digitalWrite(R, LOW);
+    digitalWrite(G, LOW);
+    digitalWrite(B, LOW);
+    digitalWrite(BUZZER, LOW);
+
+#ifdef DEBUG
+    Serial.print("Luz %: ");
+    Serial.print(luz);
+    Serial.print(" | Temp: ");
+    Serial.println(temperatura);
+#endif
+
+    delay(300);
+  }
+
+}
